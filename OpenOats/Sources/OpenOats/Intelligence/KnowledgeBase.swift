@@ -51,7 +51,7 @@ final class KnowledgeBase {
 
     private nonisolated static func cacheURL() -> URL {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let dir = appSupport.appendingPathComponent("OpenOats")
+        let dir = appSupport.appendingPathComponent("Extra Brain")
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir.appendingPathComponent("kb_cache.json")
     }

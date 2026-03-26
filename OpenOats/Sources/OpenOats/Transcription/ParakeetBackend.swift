@@ -30,9 +30,8 @@ final class ParakeetBackend: TranscriptionBackend, @unchecked Sendable {
 
     func prepare(onStatus: @Sendable (String) -> Void, onProgress: @escaping @Sendable (Double) -> Void) async throws {
         onStatus("Downloading \(displayName)...")
-        let models = try await AsrModels.downloadAndLoad(version: version) { progress in
-            onProgress(progress.fractionCompleted)
-        }
+        let models = try await AsrModels.downloadAndLoad(version: version)
+        onProgress(1.0)
         onStatus("Initializing \(displayName)...")
         let asr = AsrManager(config: .default)
         try await asr.initialize(models: models)

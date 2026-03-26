@@ -29,7 +29,7 @@ struct ContentView: View {
         return VStack(spacing: 0) {
             // Compact header
             HStack {
-                Text("OpenOats")
+                Text("Extra Brain")
                     .font(.system(size: 13, weight: .semibold))
 
                 Spacer()

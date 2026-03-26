@@ -2,16 +2,19 @@ import Foundation
 
 enum OpenOatsDeepLink {
     static func parse(_ url: URL) -> ExternalCommand? {
-        guard let scheme = url.scheme?.lowercased(), scheme == "openoats" else {
+        guard let scheme = url.scheme?.lowercased(),
+              scheme == "openoats" || scheme == "extrabrain"
+        else {
             return nil
         }
 
         let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
         let host = url.host?.lowercased() ?? ""
-        let sessionID = queryValue(named: "sessionID", in: components)
+        let rawSessionID = queryValue(named: "sessionID", in: components)
             ?? queryValue(named: "sessionId", in: components)
             ?? queryValue(named: "id", in: components)
             ?? pathSessionID(from: url)
+        let sessionID = rawSessionID.flatMap(SessionIDValidator.normalize(_:))
 
         switch host {
         case "start":

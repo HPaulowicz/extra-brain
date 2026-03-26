@@ -1,5 +1,6 @@
 // swift-tools-version: 6.2
 
+#if canImport(PackageDescription) && swift(>=6.2)
 import PackageDescription
 
 let package = Package(
@@ -20,12 +21,11 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/FluidInference/FluidAudio.git", from: "0.12.5"),
+        // Keep FluidAudio on a swift-transformers 1.1.x-compatible line so it can
+        // resolve with upstream argmaxinc/WhisperKit.
+        .package(url: "https://github.com/FluidInference/FluidAudio.git", exact: "0.12.2"),
         .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.7.0"),
-        // Fork with relaxed swift-transformers constraint (from: "1.1.6" instead of upToNextMinor)
-        // to allow coexistence with FluidAudio 0.12.5 which requires swift-transformers >= 1.2.0.
-        // TODO: Switch back to argmaxinc/WhisperKit once upstream relaxes the constraint.
-        .package(url: "https://github.com/yazins-ai/WhisperKit.git", branch: "fix/swift-transformers-compat"),
+        .package(url: "https://github.com/argmaxinc/WhisperKit.git", exact: "0.15.0"),
         .package(url: "https://github.com/sindresorhus/LaunchAtLogin-Modern", from: "1.1.0"),
     ],
     targets: [
@@ -59,3 +59,4 @@ let package = Package(
         ),
     ]
 )
+#endif

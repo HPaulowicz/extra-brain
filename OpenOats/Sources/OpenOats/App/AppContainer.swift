@@ -46,9 +46,9 @@ final class AppContainer {
                 appSupportDirectory: FileManager.default.urls(
                     for: .applicationSupportDirectory,
                     in: .userDomainMask
-                ).first!.appendingPathComponent("OpenOats", isDirectory: true),
+                ).first!.appendingPathComponent("Extra Brain", isDirectory: true),
                 notesDirectory: FileManager.default.homeDirectoryForCurrentUser
-                    .appendingPathComponent("Documents/OpenOats", isDirectory: true)
+                    .appendingPathComponent("Documents/Extra Brain", isDirectory: true)
             )
             let settings = AppSettings()
             let coordinator = AppCoordinator()

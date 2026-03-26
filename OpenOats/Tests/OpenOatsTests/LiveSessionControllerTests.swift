@@ -161,6 +161,23 @@ final class LiveSessionControllerTests: XCTestCase {
         XCTAssertEqual(coordinator.state, .idle)
     }
 
+    func testDeepLinkStartRejectedWhenConsentMissing() {
+        let dirs = makeTempDirs()
+        let settings = makeSettings(notesDirectory: dirs.notes)
+        settings.hasAcknowledgedRecordingConsent = false
+        let (controller, coordinator) = makeController(
+            root: dirs.root,
+            notesDirectory: dirs.notes,
+            settings: settings
+        )
+
+        coordinator.queueExternalCommand(.startSession)
+        controller.handlePendingExternalCommandIfPossible(settings: settings, openNotesWindow: nil)
+
+        XCTAssertNil(coordinator.pendingExternalCommand)
+        XCTAssertEqual(coordinator.state, .idle)
+    }
+
     func testDeepLinkStopRejectedWhenNotRunning() {
         let dirs = makeTempDirs()
         let settings = makeSettings(notesDirectory: dirs.notes)

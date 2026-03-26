@@ -24,7 +24,7 @@ public struct OpenOatsRootApp: App {
     }
 
     public var body: some Scene {
-        Window("OpenOats", id: "main") {
+        Window("Extra Brain", id: "main") {
             ContentView(settings: settings)
                 .environment(container)
                 .environment(coordinator)
@@ -372,7 +372,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             guard granted == true else { return }
 
             let content = UNMutableNotificationContent()
-            content.title = "OpenOats is still running"
+            content.title = "Extra Brain is still running"
             content.body = "Meeting detection is active. Click the menu bar icon to access controls."
 
             let request = UNNotificationRequest(

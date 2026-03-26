@@ -37,7 +37,7 @@ struct SettingsStorage {
             defaults: defaults,
             secretStore: .keychain,
             defaultNotesDirectory: FileManager.default.homeDirectoryForCurrentUser
-                .appendingPathComponent("Documents/OpenOats"),
+                .appendingPathComponent("Documents/Extra Brain"),
             runMigrations: true
         )
     }

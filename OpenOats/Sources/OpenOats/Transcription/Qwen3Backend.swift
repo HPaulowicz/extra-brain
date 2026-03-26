@@ -19,9 +19,8 @@ final class Qwen3Backend: TranscriptionBackend, @unchecked Sendable {
 
     func prepare(onStatus: @Sendable (String) -> Void, onProgress: @escaping @Sendable (Double) -> Void) async throws {
         onStatus("Downloading \(displayName)...")
-        let modelsDirectory = try await Qwen3AsrModels.download(progressHandler: { progress in
-            onProgress(progress.fractionCompleted)
-        })
+        let modelsDirectory = try await Qwen3AsrModels.download()
+        onProgress(1.0)
         onStatus("Initializing \(displayName)...")
         let qwen3 = Qwen3AsrManager()
         try await qwen3.loadModels(from: modelsDirectory)

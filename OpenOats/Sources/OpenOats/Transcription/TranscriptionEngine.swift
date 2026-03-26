@@ -244,7 +244,7 @@ final class TranscriptionEngine {
                 assetStatus = "Loading diarization model..."
                 diagLog("[ENGINE-1c] loading LS-EEND diarization model...")
                 let dm = DiarizationManager()
-                let variant = LSEENDVariant(rawValue: settings.diarizationVariant.rawValue) ?? .dihard3
+                let variant = settings.diarizationVariant
                 try await dm.load(variant: variant)
                 self.diarizationManager = dm
                 diagLog("[ENGINE-1c] diarization model loaded")

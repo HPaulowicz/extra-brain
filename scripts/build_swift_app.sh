@@ -11,6 +11,12 @@ set -euo pipefail
 # For smoke checks without code signing or installation:
 #   SKIP_SIGN=1 SKIP_INSTALL=1 ./scripts/build_swift_app.sh
 #
+# To force a specific Swift build configuration:
+#   SWIFT_BUILD_CONFIG=debug ./scripts/build_swift_app.sh
+#
+# To disable automatic release->debug fallback:
+#   ALLOW_RELEASE_FALLBACK=0 ./scripts/build_swift_app.sh
+#
 # For notarization:
 #   APPLE_ID="name@example.com"
 #   APPLE_TEAM_ID="TEAMID123"
@@ -19,17 +25,30 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 ROOT_DIR="$(pwd)"
 SWIFT_DIR="$ROOT_DIR/OpenOats"
-APP_NAME="OpenOats"
-BUNDLE_ID="com.openoats.app"
+APP_NAME="Extra Brain"
+BUNDLE_ID="com.extrabrain.app"
 SKIP_SIGN="${SKIP_SIGN:-0}"
 SKIP_INSTALL="${SKIP_INSTALL:-0}"
+SWIFT_BUILD_CONFIG="${SWIFT_BUILD_CONFIG:-release}"
+ALLOW_RELEASE_FALLBACK="${ALLOW_RELEASE_FALLBACK:-1}"
+ADHOC_SIGN_WHEN_UNSIGNED="${ADHOC_SIGN_WHEN_UNSIGNED:-1}"
 
-echo "=== Building $APP_NAME (Swift) ==="
+echo "=== Building $APP_NAME (Swift, config: $SWIFT_BUILD_CONFIG) ==="
 
-# Build release binary
+# Build binary
 cd "$SWIFT_DIR"
-swift build -c release 2>&1
-BINARY_PATH=".build/release/OpenOats"
+if ! swift build -c "$SWIFT_BUILD_CONFIG" 2>&1; then
+  if [[ "$SWIFT_BUILD_CONFIG" == "release" && "$ALLOW_RELEASE_FALLBACK" == "1" ]]; then
+    echo "Release build failed. Retrying with debug to bypass known Swift optimizer crashes..."
+    SWIFT_BUILD_CONFIG="debug"
+    swift build -c "$SWIFT_BUILD_CONFIG" 2>&1
+  else
+    echo "Build failed for configuration: $SWIFT_BUILD_CONFIG"
+    exit 1
+  fi
+fi
+
+BINARY_PATH=".build/$SWIFT_BUILD_CONFIG/OpenOats"
 
 if [[ ! -f "$BINARY_PATH" ]]; then
   echo "Build failed: binary not found at $BINARY_PATH"
@@ -46,11 +65,11 @@ mkdir -p "$APP_DIR/Contents/Resources"
 mkdir -p "$APP_DIR/Contents/Frameworks"
 
 # Copy binary
-cp "$BINARY_PATH" "$APP_DIR/Contents/MacOS/OpenOats"
+cp "$BINARY_PATH" "$APP_DIR/Contents/MacOS/ExtraBrain"
 
 # Make the SwiftPM-built executable behave like a normal app bundle by
 # teaching dyld to search the app's embedded Frameworks directory.
-APP_BINARY="$APP_DIR/Contents/MacOS/OpenOats"
+APP_BINARY="$APP_DIR/Contents/MacOS/ExtraBrain"
 if ! otool -l "$APP_BINARY" | grep -Fq "@executable_path/../Frameworks"; then
   install_name_tool -add_rpath "@executable_path/../Frameworks" "$APP_BINARY"
   echo "Added app Frameworks rpath to executable"
@@ -82,7 +101,12 @@ echo -n "APPL????" > "$APP_DIR/Contents/PkgInfo"
 echo "App bundle created: $APP_DIR"
 
 if [[ "$SKIP_SIGN" == "1" ]]; then
-  echo "Skipping code signing"
+    echo "Skipping code signing"
+    if [[ "$ADHOC_SIGN_WHEN_UNSIGNED" == "1" ]]; then
+      echo "Applying ad-hoc signature for local launch reliability"
+      codesign --force --deep --sign - --timestamp=none "$APP_DIR"
+      codesign --verify --deep --strict --verbose=2 "$APP_DIR"
+    fi
 else
   # Auto-detect signing identity if not set
   if [[ -z "${CODESIGN_IDENTITY:-}" ]]; then

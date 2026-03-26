@@ -43,7 +43,7 @@ struct SettingsView: View {
             }
 
             Section("Knowledge Base") {
-                Text("Optional. Point this to a folder of notes, docs, or reference material (.md, .txt). During meetings, OpenOats searches this folder to surface relevant context and talking points.")
+                Text("Optional. Point this to a folder of notes, docs, or reference material (.md, .txt). During meetings, Extra Brain searches this folder to surface relevant context and talking points.")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
 
@@ -218,7 +218,7 @@ struct SettingsView: View {
 
                     ZStack(alignment: .topLeading) {
                         if settings.transcriptionCustomVocabulary.isEmpty {
-                            Text("One term per line. Optional aliases: OpenOats: open oats")
+                            Text("One term per line. Optional aliases: Extra Brain: extra brain")
                                 .font(.system(size: 11))
                                 .foregroundStyle(.quaternary)
                                 .padding(.top, 6)
@@ -298,7 +298,7 @@ struct SettingsView: View {
                         }
                     }
 
-                Text("When enabled, OpenOats monitors microphone activation to detect when a meeting app starts a call. No audio is captured until you accept the notification.")
+                Text("When enabled, Extra Brain monitors microphone activation to detect when a meeting app starts a call. No audio is captured until you accept the notification.")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
 
@@ -315,7 +315,7 @@ struct SettingsView: View {
                         .font(.headline)
 
                     VStack(alignment: .leading, spacing: 10) {
-                        Label("OpenOats watches for microphone activation by meeting apps (Zoom, Teams, FaceTime, etc.)", systemImage: "mic")
+                        Label("Extra Brain watches for microphone activation by meeting apps (Zoom, Teams, FaceTime, etc.)", systemImage: "mic")
                         Label("Only activation status is checked. No audio is captured or recorded until you accept.", systemImage: "lock.shield")
                         Label("When a meeting is detected, you get a macOS notification to start transcribing.", systemImage: "bell")
                         Label("You can always dismiss the notification or mark it as \"not a meeting\".", systemImage: "hand.raised")

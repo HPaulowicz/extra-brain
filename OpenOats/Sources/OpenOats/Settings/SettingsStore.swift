@@ -473,6 +473,7 @@ final class SettingsStore {
         if storage.runMigrations {
             Self.migrateFromOldBundleIfNeeded(defaults: defaults)
             Self.migrateFromOpenGranolaIfNeeded(defaults: defaults)
+            Self.migrateOpenOatsPathsIfNeeded(defaults: defaults)
             Self.migrateKeychainServiceIfNeeded(defaults: defaults)
         }
 
@@ -685,7 +686,7 @@ extension SettingsStore {
     }
 
     /// Migrate file-backed state (sessions, templates, KB cache, transcripts)
-    /// from ~/Library/Application Support/OpenGranola/ to OpenOats/ and
+    /// from ~/Library/Application Support/OpenGranola/ to Extra Brain/ and
     /// handle the implicit KB folder default.
     private static func migrateFilesFromOpenGranola(defaults: UserDefaults) {
         let fm = FileManager.default
@@ -693,7 +694,7 @@ extension SettingsStore {
         let appSupport = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
 
         let oldAppSupportDir = appSupport.appendingPathComponent("OpenGranola")
-        let newAppSupportDir = appSupport.appendingPathComponent("OpenOats")
+        let newAppSupportDir = appSupport.appendingPathComponent("Extra Brain")
 
         if fm.fileExists(atPath: oldAppSupportDir.path) {
             try? fm.createDirectory(at: newAppSupportDir, withIntermediateDirectories: true)
@@ -718,7 +719,7 @@ extension SettingsStore {
         }
 
         let oldDocDir = home.appendingPathComponent("Documents/OpenGranola")
-        let newDocDir = home.appendingPathComponent("Documents/OpenOats")
+        let newDocDir = home.appendingPathComponent("Documents/Extra Brain")
 
         if defaults.string(forKey: "notesFolderPath") == nil {
             if fm.fileExists(atPath: oldDocDir.path) {
@@ -741,6 +742,35 @@ extension SettingsStore {
                     }
                 }
             }
+        }
+    }
+
+    /// Migrate legacy OpenOats filesystem paths to Extra Brain defaults.
+    private static func migrateOpenOatsPathsIfNeeded(defaults: UserDefaults) {
+        let migrationKey = "didMigrateOpenOatsPathsToExtraBrain"
+        guard !defaults.bool(forKey: migrationKey) else { return }
+        defer { defaults.set(true, forKey: migrationKey) }
+
+        let fm = FileManager.default
+        let home = fm.homeDirectoryForCurrentUser
+        let appSupport = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+
+        let oldAppSupportDir = appSupport.appendingPathComponent("OpenOats", isDirectory: true)
+        let newAppSupportDir = appSupport.appendingPathComponent("Extra Brain", isDirectory: true)
+
+        if fm.fileExists(atPath: oldAppSupportDir.path) && !fm.fileExists(atPath: newAppSupportDir.path) {
+            try? fm.moveItem(at: oldAppSupportDir, to: newAppSupportDir)
+        }
+
+        let oldNotesDir = home.appendingPathComponent("Documents/OpenOats", isDirectory: true)
+        let newNotesDir = home.appendingPathComponent("Documents/Extra Brain", isDirectory: true)
+
+        if fm.fileExists(atPath: oldNotesDir.path) && !fm.fileExists(atPath: newNotesDir.path) {
+            try? fm.moveItem(at: oldNotesDir, to: newNotesDir)
+        }
+
+        if defaults.string(forKey: "notesFolderPath") == oldNotesDir.path {
+            defaults.set(newNotesDir.path, forKey: "notesFolderPath")
         }
     }
 

@@ -4,85 +4,89 @@ import os
 
 private let diarizationLog = Logger(subsystem: "com.openoats.app", category: "Diarization")
 
-/// Manages LS-EEND speaker diarization for system audio.
-/// Wraps the FluidAudio LSEENDDiarizer and provides speaker attribution
-/// for transcribed segments by querying the diarizer timeline.
+/// Manages speaker diarization for system audio.
+/// Wraps FluidAudio's DiarizerManager and exposes a stable interface used by
+/// OpenOats for speaker attribution.
 actor DiarizationManager {
-    private nonisolated(unsafe) let diarizer = LSEENDDiarizer()
+    private nonisolated(unsafe) let diarizer = DiarizerManager()
     private var isInitialized = false
+    private var allSegments: [TimedSpeakerSegment] = []
+    private var speakerIndexByID: [String: Int] = [:]
+    private var nextSpeakerIndex = 1
+    private var nextChunkStartTime: TimeInterval = 0
 
-    /// Load the LS-EEND model for the given variant. Must be called before feedAudio/dominantSpeaker.
-    func load(variant: LSEENDVariant = .dihard3) async throws {
-        diarizationLog.info("Loading LS-EEND model (variant: \(variant.rawValue))")
-        try await diarizer.initialize(variant: variant)
+    /// Load diarization models. Variant is retained for app compatibility.
+    func load(variant: DiarizationVariant = .dihard3) async throws {
+        diarizationLog.info("Loading diarization model (variant: \(variant.rawValue))")
+        let models = try await DiarizerModels.downloadIfNeeded()
+        diarizer.initialize(models: models)
         isInitialized = true
-        diarizationLog.info("LS-EEND model loaded")
+        allSegments.removeAll()
+        speakerIndexByID.removeAll()
+        nextSpeakerIndex = 1
+        nextChunkStartTime = 0
+        diarizationLog.info("Diarization model loaded")
     }
 
     /// Feed audio samples to the diarizer. Samples should be at 16kHz mono Float32.
-    /// Uses addAudio + process for streaming (does not reset state between calls).
     func feedAudio(_ samples: [Float]) throws {
         guard isInitialized else { return }
-        try diarizer.addAudio(samples, sourceSampleRate: 16000)
-        _ = try diarizer.process()
+        let result = try diarizer.performCompleteDiarization(
+            samples,
+            sampleRate: 16000,
+            atTime: nextChunkStartTime
+        )
+        allSegments.append(contentsOf: result.segments)
+        nextChunkStartTime += Double(samples.count) / 16000.0
     }
 
     /// Returns the dominant speaker for a given time range in seconds.
-    /// Queries the DiarizerTimeline and finds which speaker has the most
-    /// speech frames overlapping [startTime, endTime].
+    /// Finds which speaker has the most overlap with [startTime, endTime].
     func dominantSpeaker(from startTime: TimeInterval, to endTime: TimeInterval) -> Speaker {
-        let timeline = diarizer.timeline
-        let speakers = timeline.speakers
-
-        guard !speakers.isEmpty else { return .them }
-
-        var bestSpeaker: Int = 0
+        guard !allSegments.isEmpty else { return .them }
         var bestOverlap: Float = 0
+        var bestSpeakerID: String?
 
         let queryStart = Float(startTime)
         let queryEnd = Float(endTime)
 
-        for (index, speaker) in speakers {
-            let allSegments = speaker.finalizedSegments + speaker.tentativeSegments
-            var overlap: Float = 0
-
-            for segment in allSegments {
-                let overlapStart = max(segment.startTime, queryStart)
-                let overlapEnd = min(segment.endTime, queryEnd)
-                if overlapEnd > overlapStart {
-                    overlap += overlapEnd - overlapStart
-                }
-            }
-
+        for segment in allSegments {
+            let overlapStart = max(segment.startTimeSeconds, queryStart)
+            let overlapEnd = min(segment.endTimeSeconds, queryEnd)
+            guard overlapEnd > overlapStart else { continue }
+            let overlap = overlapEnd - overlapStart
             if overlap > bestOverlap {
                 bestOverlap = overlap
-                bestSpeaker = index
+                bestSpeakerID = segment.speakerId
             }
         }
+        guard bestOverlap > 0, let bestSpeakerID else { return .them }
 
-        guard bestOverlap > 0 else { return .them }
+        // If only one speaker was detected overall, preserve existing .them behavior.
+        let uniqueSpeakerCount = Set(allSegments.map(\.speakerId)).count
+        guard uniqueSpeakerCount > 1 else { return .them }
 
-        // If only one speaker was detected in the entire session, fall back to .them
-        // for backward compatibility (no point labeling "Speaker 1" when there's only one).
-        let activeSpeakers = speakers.values.filter { $0.hasSegments }
-        if activeSpeakers.count <= 1 {
-            return .them
+        if let existingIndex = speakerIndexByID[bestSpeakerID] {
+            return .remote(existingIndex)
         }
 
-        // Map diarizer speaker index to Speaker enum
-        // Index 0 → .remote(1), index 1 → .remote(2), etc.
-        return .remote(bestSpeaker + 1)
+        let index = nextSpeakerIndex
+        speakerIndexByID[bestSpeakerID] = index
+        nextSpeakerIndex += 1
+        return .remote(index)
     }
 
-    /// Finalize the diarization session (flush tentative segments).
+    /// Finalize the diarization session.
     func finalize() {
-        guard isInitialized else { return }
-        _ = try? diarizer.finalizeSession()
+        // No-op for current FluidAudio diarizer API.
     }
 
     /// Reset the diarizer state for a new session.
     func reset() {
-        guard isInitialized else { return }
-        diarizer.reset()
+        allSegments.removeAll()
+        speakerIndexByID.removeAll()
+        nextSpeakerIndex = 1
+        nextChunkStartTime = 0
+        diarizer.speakerManager.reset()
     }
 }

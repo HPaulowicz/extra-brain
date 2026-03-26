@@ -50,4 +50,10 @@ final class ExternalCommandTests: XCTestCase {
         let consumed = coordinator.consumeRequestedSessionSelection()
         XCTAssertNil(consumed)
     }
+
+    func testQueueSessionSelectionRejectsUnsafeID() {
+        let coordinator = AppCoordinator()
+        coordinator.queueSessionSelection("../../etc/passwd")
+        XCTAssertNil(coordinator.requestedSessionSelectionID)
+    }
 }

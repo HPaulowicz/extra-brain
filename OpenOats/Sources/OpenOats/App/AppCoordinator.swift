@@ -202,7 +202,11 @@ final class AppCoordinator {
     }
 
     func queueSessionSelection(_ sessionID: String?) {
-        requestedSessionSelectionID = sessionID
+        if let sessionID {
+            requestedSessionSelectionID = SessionIDValidator.normalize(sessionID)
+        } else {
+            requestedSessionSelectionID = nil
+        }
     }
 
     func consumeRequestedSessionSelection() -> String? {

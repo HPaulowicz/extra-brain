@@ -146,6 +146,10 @@ final class LiveSessionController {
 
         switch request.command {
         case .startSession:
+            guard settings.hasAcknowledgedRecordingConsent else {
+                handled = true
+                break
+            }
             guard coordinator.transcriptionEngine != nil,
                   coordinator.suggestionEngine != nil else { return }
             if !state.isRunning {

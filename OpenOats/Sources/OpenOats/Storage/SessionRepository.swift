@@ -124,7 +124,7 @@ actor SessionRepository {
     private var onWriteError: (@Sendable (String) -> Void)?
     private var hasReportedWriteError = false
 
-    /// User-facing notes folder for mirroring (e.g. ~/Documents/OpenOats).
+    /// User-facing notes folder for mirroring (e.g. ~/Documents/Extra Brain).
     private var notesFolderPath: URL?
 
     init(rootDirectory: URL? = nil) {
@@ -136,7 +136,7 @@ actor SessionRepository {
                 for: .applicationSupportDirectory,
                 in: .userDomainMask
             ).first!
-            baseDirectory = appSupport.appendingPathComponent("OpenOats", isDirectory: true)
+            baseDirectory = appSupport.appendingPathComponent("Extra Brain", isDirectory: true)
         }
         sessionsDirectory = baseDirectory.appendingPathComponent("sessions", isDirectory: true)
 
@@ -763,7 +763,7 @@ actor SessionRepository {
         let headerFmt = DateFormatter()
         headerFmt.dateStyle = .medium
         headerFmt.timeStyle = .short
-        var result = "OpenOats - \(headerFmt.string(from: startDate))\n\n"
+        var result = "Extra Brain - \(headerFmt.string(from: startDate))\n\n"
 
         let timeFmt = DateFormatter()
         timeFmt.dateFormat = "HH:mm:ss"
